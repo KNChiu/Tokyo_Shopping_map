@@ -91,8 +91,8 @@ window.SHOP_DATA = (() => {
       note: "街邊店，以現場樓層導覽為準。" },
     { id: "hcube", area: "aoyama", name: "H-CUBE MINAMIAOYAMA II", floorRange: "1–2F", addr: "南青山5-5-1", map: "H-CUBE MINAMIAOYAMA",
       note: "lululemon 1F（另有 2F）。" },
-    { id: "quest", area: "aoyama", name: "原宿クエスト（舊 NIKE 位置）", floorRange: "B1–6F", addr: "神宮前1", map: "原宿クエスト",
-      note: "Lululemon 表參道旗艦店預計 2026.8 開幕，以現場樓層導覽為準。" },
+    { id: "quest", area: "aoyama", name: "原宿クエスト（舊 NIKE 位置）", floorRange: "B1–6F", addr: "神宮前1-13-12", map: "原宿クエスト",
+      note: "ルルレモン原宿 1F–2F，2026.8.19 開幕。" },
     // ── F 上野／御徒町
     { id: "comterrace", area: "ueno", name: "コムテラス御徒町", floorRange: "B1–4F", addr: "上野3-22-6", map: "コムテラス御徒町",
       note: "御徒町站南口立刻到；Mont-bell 4 層 350 坪，無休。" },
@@ -192,9 +192,9 @@ window.SHOP_DATA = (() => {
     { id: "ll-aoyama", brand: "Lululemon", name: "lululemon Tokyo Aoyama", building: "hcube",
       floor: "1F", level: 1, hours: "11:00–20:00", status: "ok",
       alt: "另有 2F", tags: ["服飾", "運動"] },
-    { id: "ll-harajuku-flag", brand: "Lululemon", name: "Lululemon 原宿（表參道旗艦店）", building: "quest",
-      floor: "◇ 待開幕", level: 1, hours: "10:30–20:00", status: "check",
-      alt: "2026.8 開幕，以現場樓層導覽為準", tags: ["服飾", "運動"] },
+    { id: "ll-harajuku-flag", brand: "Lululemon", name: "ルルレモン原宿", building: "quest",
+      floor: "1F–2F", level: 1, hours: "10:30–20:00", status: "ok",
+      alt: "2026.8.19 開幕，日本首間全球旗艦店", tags: ["服飾", "運動"] },
     // ── F
     { id: "mb-okachimachi", brand: "Mont-bell", name: "モンベル 御徒町店", building: "comterrace",
       floor: "1F–4F", level: 1, hours: "10:00–21:00，無休", status: "ok",
@@ -209,7 +209,7 @@ window.SHOP_DATA = (() => {
 
   // 原文「> 走法」段落轉成可勾選的路線
   const plans = [
-    { area: "shinjuku", title: "新宿主力路線", time: "約 5 個品牌",
+    { area: "shinjuku", title: "新宿主力路線", time: "8 個品牌",
       rule: "ルミネエスト 2F → 3F → ルミネ新宿2 2F → NEWoMan 1F → 新宿マルイ 1F，彼此步行 5–8 分鐘。",
       steps: ["lf-lumineest", "ht-lumineest", "3c-lumineest", "vis-lumineest", "tf-lumine2", "noble-lumine2", "nel-newoman", "ll-shinjuku"] },
     { area: "ginza", title: "銀座 1F 連逛", time: "約 30 分鐘",
@@ -223,7 +223,7 @@ window.SHOP_DATA = (() => {
       steps: ["hoka-shibuya", "ll-shibuya"] },
     { area: "aoyama", title: "表參道一走", time: "10–15 分鐘步行圈",
       rule: "沿著同一條路串完，從 HOKA 原宿走到 Lululemon 青山。",
-      steps: ["hoka-harajuku", "tf-studious-aoyama", "nel-harajuku", "nel-aoyama", "ll-aoyama"] },
+      steps: ["hoka-harajuku", "ll-harajuku-flag", "tf-studious-aoyama", "nel-harajuku", "nel-aoyama", "ll-aoyama"] },
     { area: "ueno", title: "阿美橫町一趟", time: "上野 ↔ 御徒町",
       rule: "上野站到御徒町站中間就是阿美橫町，走一趟三間都能到；3COINS 改札內，先逛再出站。",
       steps: ["3c-ecute", "mb-okachimachi", "hoka-art"] },
@@ -261,7 +261,7 @@ window.SHOP_DATA = (() => {
     title: "東京購物區域速查",
     subtitle: "含樓層 · 走到哪個區域、哪棟樓，就知道有哪幾間店可以逛",
     source: "東京購物區域速查_含樓層.md（官網／百貨官網，擷取於 2025–26 年）",
-    updated: "2025–26"
+    updated: "2026-10"
   };
 
   return { areas, buildings, stores, plans, picks, brands, meta };

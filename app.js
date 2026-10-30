@@ -18,59 +18,7 @@
 
   // ═════════════════════════════ 時間 ═════════════════════════════
   const TZ = "Asia/Tokyo";
-  const WD = ["日", "一", "二", "三", "四", "五", "六"];
-  // 05:00 前視為跨日營業（例：到 02:00）
-  const toMin = (h, m) => { const v = +h * 60 + +(m || 0); return v < 300 ? v + 1440 : v; };
-  const fmtHM = (min) => { const v = ((min % 1440) + 1440) % 1440; return `${String(Math.floor(v / 60)).padStart(2, "0")}:${String(v % 60).padStart(2, "0")}`; };
-
-  const HM = "(\\d{1,2})[:：](\\d{2})";
-  const SPAN = "(\\d{1,2})[:：](\\d{2})\\s*[–—−-]\\s*(\\d{1,2})[:：](\\d{2})";
-  const span = (g) => [toMin(g[0], g[1]), toMin(g[2], g[3])];
-
-  /** 解析速查表用到的幾種營業時間寫法 → { base:[開,關], byWeekday:{星期: [開,關]} } */
-  function parseHours(text) {
-    // 週一至六 11:00–20:30／日・祝 11:00–20:00   （週日整段不同）
-    const weekdaySplit = text.match(new RegExp(`${SPAN}[／/]\\s*日・祝\\s*${SPAN}`));
-    if (weekdaySplit) {
-      return { base: span(weekdaySplit.slice(1, 5)), byWeekday: { 0: span(weekdaySplit.slice(5, 9)) } };
-    }
-    // 平日・六 11:00–20:00／日・祝 10:30–19:30、平日 11–21／六日 10:30–21   （六日整段不同）
-    const dailySplit = text.match(new RegExp(`${SPAN}[／/]\\s*(?:日・祝|六日)\\s*${SPAN}`));
-    if (dailySplit) {
-      const we = span(dailySplit.slice(5, 9));
-      return { base: span(dailySplit.slice(1, 5)), byWeekday: { 0: we, 6: we } };
-    }
-    // 8:00–21:00（週五到 22:00）
-    const late = text.match(new RegExp(`${SPAN}（週五到\\s*${HM}）`));
-    if (late) {
-      const [o, c] = span(late.slice(1, 5));
-      return { base: [o, c], byWeekday: { 5: [o, toMin(late[5], late[6])] } };
-    }
-    // 平日 11–21／六日 10:30–21   （只寫小時）
-    const hh = text.match(/平日\s*(\d{1,2})[^\d]{1,3}(\d{1,2})[^\d]{1,4}六日\s*(\d{1,2})[^\d]{1,3}(\d{1,2})/);
-    if (hh) {
-      const we = [toMin(hh[3], 0), toMin(hh[4], 0)];
-      return { base: [toMin(hh[1], 0), toMin(hh[2], 0)], byWeekday: { 0: we, 6: we } };
-    }
-    const m = text.match(new RegExp(SPAN));
-    return m ? { base: span(m.slice(1, 5)), byWeekday: {} } : null;
-  }
-
-  /** 某天（週日 = 0，可 > 6 代表下一週）的營業區間；昨天營業到深夜會帶進今天凌晨 */
-  function dayRanges(h, weekIndex) {
-    if (!h) return [];
-    const wd = ((weekIndex % 7) + 7) % 7;
-    const today = h.byWeekday[wd] || h.base;
-    const ranges = [{ start: today[0], end: Math.min(today[1], 1440), dayIndex: weekIndex }];
-    const prevWd = (wd + 6) % 7;
-    const prev = h.byWeekday[prevWd] || h.base;
-    if (prev[1] > 1440) ranges.push({ start: 0, end: prev[1] - 1440, dayIndex: weekIndex });
-    return ranges;
-  }
-  const openAt = (h, weekIndex, minuteOfDay) => {
-    const abs = weekIndex * 1440 + minuteOfDay;
-    return dayRanges(h, weekIndex).some((r) => abs >= r.dayIndex * 1440 + r.start && abs < r.dayIndex * 1440 + r.end);
-  };
+  const { WD, fmtHM, parseHours, dayRanges, openAt } = window.SHOP_HOURS;
 
   /** 台北時間（台灣固定 UTC+8；東京夏天 UTC+9、冬天 UTC+10 差距不同，所以實際算） */
   function taipeiHM() {
@@ -93,13 +41,14 @@
     const [h, m] = state.time.split(":").map(Number);
     return { wd: NOW.wd, h, m };
   }
+  const nowMin = () => { const t = currentNow(); return t.h * 60 + t.m; };
   function stateOf(store) {
     const h = store._h;
     if (!h) return { known: false };
     const t = currentNow();
-    const cur = toMin(t.h, t.m);
-    const isOpen = openAt(h, 0, cur);
-    const r = dayRanges(h, 0).find((x) => cur >= x.start && cur < x.end);
+    const cur = t.h * 60 + t.m;
+    const isOpen = openAt(h, t.wd, cur);
+    const r = dayRanges(h, t.wd).find((x) => cur >= x.start && cur < x.end);
     return { known: true, open: isOpen, close: r ? r.end : null };
   }
   /**
@@ -108,8 +57,9 @@
    * 只有少數店家會在現場臨時休館，需要人工再確認。
    */
   function opensLaterToday(store) {
-    const cur = toMin(currentNow().h, currentNow().m);
-    return dayRanges(store._h, 0).some((r) => r.end > cur && r.start > cur);
+    const t = currentNow();
+    const cur = t.h * 60 + t.m;
+    return dayRanges(store._h, t.wd).some((r) => r.end > cur && r.start > cur);
   }
 
   // ═════════════════════════════ 狀態（放進網址，可分享／書籤） ═════════════════════════════
@@ -121,7 +71,8 @@
     if (h.get("b")) state.brands = h.get("b").split(",").filter((x) => brandOrder.includes(x));
     if (h.get("q")) state.q = h.get("q");
     if (h.get("open") === "1") state.open = true;
-    if (/^\d{1,2}:\d{2}$/.test(h.get("t") || "")) state.time = h.get("t");
+    const tm = (h.get("t") || "").match(/^(\d{1,2}):(\d{2})$/);
+    if (tm && +tm[1] < 24 && +tm[2] < 60) state.time = h.get("t");
   })();
   function writeHash() {
     const h = new URLSearchParams();
@@ -142,17 +93,20 @@
     s._hay = [s.brand, s.name, b.name, b.addr, b.map, s.alt, (s.tags || []).join(" "), areaById[b.area].name].join(" ").toLowerCase();
   });
 
-  function storeHit(s) {
+  function matchesQuery(s) {
     if (state.brands.length && !state.brands.includes(s.brand)) return false;
     if (state.q && !state.q.toLowerCase().split(/\s+/).filter(Boolean).every((w) => s._hay.includes(w))) return false;
-    if (state.open) {
-      const st = stateOf(s);
-      if (st.known && !st.open && !opensLaterToday(s)) return false;
-    }
+    return true;
+  }
+  /** 現在開著，或營業時間不明（不明時照常顯示） */
+  const openNow = (s) => { const st = stateOf(s); return !(st.known && !st.open); };
+  function storeHit(s) {
+    if (!matchesQuery(s)) return false;
+    if (state.open && !openNow(s)) return false;
     return true;
   }
   function areaHit(area) {
-    if (!storesOfArea(area).length) return !state.brands.length && !state.q;
+    if (!storesOfArea(area).length) return !state.brands.length && !state.q && !state.open;
     return storesOfArea(area).some(storeHit);
   }
 
@@ -161,12 +115,12 @@
   function hourBar(h) {
     if (!h) return "";
     const total = DAY_END - DAY_START;
-    const segs = dayRanges(h, 0).map((r) => {
+    const segs = dayRanges(h, currentNow().wd).map((r) => {
       const s = Math.max(r.start, DAY_START), e = Math.min(r.end, DAY_END);
       if (e <= s) return "";
       return `<i class="hb-open" style="left:${((s - DAY_START) / total) * 100}%;width:${((e - s) / total) * 100}%"></i>`;
     }).join("");
-    const cur = toMin(currentNow().h, currentNow().m);
+    const cur = nowMin();
     const now = cur >= DAY_START && cur <= DAY_END ? `<i class="hb-now" style="left:${((cur - DAY_START) / total) * 100}%"></i>` : "";
     return `<span class="hours-bar" aria-hidden="true">${segs}${now}</span>`;
   }
@@ -192,7 +146,7 @@
   }
   /** 樓層色階：越上面顏色越深（1F 最淺、4F 最深）；B 層與路面店固定淺 */
   const levelIndex = (s) => (s.level >= 1 ? Math.min(s.level, 4) : 0);
-  function isPk(b) { return /パルコ|GINZA SIX|ルミネエスト|KCA/.test(b.map); }
+  function isPk(b) { return /PARCO|パルコ|ルミネ/.test(b.map); }
 
   // ═════════════════════════════ 建築卡片 ═════════════════════════════
   function buildingCard(b, idx) {
@@ -210,7 +164,7 @@
         <span class="pin">${String(idx + 1).padStart(2, "0")}</span>
         <div class="bh">
           <h3>${esc(b.name)}${isPk(b) ? '<span class="pk-tag">パルコ・ルミネ系</span>' : ""}</h3>
-          <div class="baddr jp">${esc(b.addr)}${b.floorRange ? ` · 建築 ${esc(b.floorRange)}` : ""}</div>
+          <div class="baddr">${esc(b.addr)}${b.floorRange ? ` · 建築 ${esc(b.floorRange)}` : ""}</div>
         </div>
         <a class="map-btn" href="${mapUrl(b)}" target="_blank" rel="noopener" aria-label="在 Google 地圖開啟 ${esc(b.name)}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>地圖
@@ -228,28 +182,32 @@
     bindDynamic();
     syncToolbar();
     const total = D.stores.filter(storeHit).length;
+    const later = state.open ? D.stores.filter((s) => {
+      const st = stateOf(s);
+      return matchesQuery(s) && st.known && !st.open && opensLaterToday(s);
+    }).length : 0;
     const t = currentNow();
-    const when = state.time ? `模擬 ${state.time}` : `東京現在 ${fmtHM(toMin(t.h, t.m))}（週${WD[t.wd]}）`;
+    const when = state.time ? `模擬 ${state.time}` : `東京現在 ${fmtHM(t.h * 60 + t.m)}（週${WD[t.wd]}）`;
     $("#resultNote").innerHTML = state.open
-      ? `只看 <b>${when}</b> 還有開的店：<b>${total}</b> / ${D.stores.length} 間`
+      ? `只看 <b>${when}</b> 開著的店：<b>${total}</b> / ${D.stores.length} 間${later ? `（另有 ${later} 間稍後開）` : ""}`
       : `<b>${total}</b> / ${D.stores.length} 間店符合條件 · 營業狀態依 <b>${when}</b>`;
     classicClock();
   }
 
   function planBox(a) {
-    const plan = D.plans.find((p) => p.area === a.id);
-    if (!plan) return "";
-    const steps = plan.steps.map((id, i) => {
-      const s = storeById[id], b = buildById[s.building];
-      return `${i ? '<span class="arrow">→</span>' : ""}<button class="step" data-act="jump" data-building="${b.id}" title="跳到 ${esc(b.name)}">
-        <span class="step-n">${i + 1}</span>
-        <span class="step-t"><b>${esc(b.name)}</b> <span class="step-fl">${floorBadge(s.floor)}</span> <em>${esc(s.brand)}</em></span></button>`;
+    return D.plans.filter((p) => p.area === a.id).map((plan) => {
+      const steps = plan.steps.map((id, i) => {
+        const s = storeById[id], b = buildById[s.building];
+        return `${i ? '<span class="arrow">→</span>' : ""}<button class="step" data-act="jump" data-building="${b.id}" title="跳到 ${esc(b.name)}">
+          <span class="step-n">${i + 1}</span>
+          <span class="step-t"><b>${esc(b.name)}</b> <span class="step-fl">${floorBadge(s.floor)}</span> <em>${esc(s.brand)}</em></span></button>`;
+      }).join("");
+      return `<section class="plan-box">
+        <div class="p-title"><span>▍走法 · ${esc(plan.title)}</span><span>${esc(plan.time)}</span></div>
+        <div class="plan-route">${steps}</div>
+        <p class="plan-rule">${esc(plan.rule)}</p>
+      </section>`;
     }).join("");
-    return `<section class="plan-box">
-      <div class="p-title"><span>▍走法 · ${esc(plan.title)}</span><span>${esc(plan.time)}</span></div>
-      <div class="plan-route">${steps}</div>
-      <p class="plan-rule">${esc(plan.rule)}</p>
-    </section>`;
   }
 
   function renderAreaView() {
@@ -282,16 +240,19 @@
       .filter((b) => !filtering || D.stores.some((s) => s.building === b.id && storeHit(s)));
     const cards = builds.map(buildingCard).join("");
     const empty = !builds.length ? `<div class="empty-state"><h3>${state.time ? `${state.time} 時，${esc(a.name)}這裡都沒有店開著` : "這個區域沒有符合條件的店"}</h3>
-        <p>${state.time ? `這個區域的店最晚 ${latestClose(a.id)} 就打烊，再晚只能往別區或車站附近找。` : "放寬品牌篩選或關掉「只看現在開著」，也可以切到「品牌清單」找最近的店。"}</p>
+        <p>${state.time ? `這區今天的營業時間是 ${openSpan(a.id)}，換個時間或往別區找。` : "放寬品牌篩選或關掉「只看現在開著」，也可以切到「品牌清單」找最近的店。"}</p>
         <div class="es-actions" style="justify-content:center">${clearFilter}<button class="back" data-act="view" data-view="brand">→ 改看品牌清單</button></div></div>` : "";
     return head + planBox(a) + (a.note ? `<p class="area-note">${esc(a.note)}</p>` : "") +
       `<div class="buildings">${cards}${empty}</div>`;
   }
 
-  /** 該區最晚的打烊時間（給「都沒開」的空狀態用） */
-  function latestClose(area) {
-    const closes = storesOfArea(area).flatMap((s) => (s._h ? dayRanges(s._h, 0).map((r) => r.end) : []));
-    return closes.length ? fmtHM(Math.max(...closes)) : "—";
+  /** 該區今天的營業範圍（給「都沒開」的空狀態用） */
+  function openSpan(area) {
+    const wd = currentNow().wd;
+    const ranges = storesOfArea(area).flatMap((s) => (s._h ? dayRanges(s._h, wd) : []));
+    return ranges.length
+      ? `${fmtHM(Math.min(...ranges.map((r) => r.start)))}–${fmtHM(Math.max(...ranges.map((r) => r.end)))}`
+      : "—";
   }
 
   function renderOverview() {
@@ -347,24 +308,39 @@
   }
 
   // ═════════════════════════════ 工具列／導覽 ═════════════════════════════
-  function chipDim(brand) { return state.open && !D.stores.some((s) => s.brand === brand && storeHit(s)); }
+  function chipDim(brand) { return state.open && !D.stores.some((s) => s.brand === brand && openNow(s)); }
+  function toggleBrand(id) {
+    state.brands = state.brands.includes(id) ? state.brands.filter((x) => x !== id) : [...state.brands, id];
+    writeHash(); render();
+  }
+  const brandBtn = (b, cls) => {
+    const n = D.stores.filter((s) => s.brand === b.id).length;
+    return `<button${cls ? ` class="${cls}"` : ""} data-brand="${esc(b.id)}" aria-pressed="${state.brands.includes(b.id)}">
+      <span class="c" aria-hidden="true"></span>${esc(b.label)}<span class="n">${n}</span></button>`;
+  };
   function buildChips() {
-    $("#brandChips").innerHTML = '<span class="lbl">品牌</span>' + D.brands.map((b) => {
-      const n = D.stores.filter((s) => s.brand === b.id).length;
-      return `<button class="chip" data-brand="${esc(b.id)}" aria-pressed="${state.brands.includes(b.id)}">
-        <span class="c" aria-hidden="true"></span>${esc(b.label)}<span class="n">${n}</span></button>`;
-    }).join("");
-    $$("#brandChips .chip").forEach((c) => c.addEventListener("click", () => {
-      const id = c.dataset.brand;
-      state.brands = state.brands.includes(id) ? state.brands.filter((x) => x !== id) : [...state.brands, id];
-      writeHash(); render();
-    }));
+    // 桌機 chips 與手機面板共用同一份品牌資料
+    $("#brandChips").innerHTML = '<span class="lbl">品牌</span>' + D.brands.map((b) => brandBtn(b, "chip")).join("");
+    $("#brandGrid").innerHTML = D.brands.map((b) => brandBtn(b)).join("");
+    $$("#brandChips .chip, #brandGrid button").forEach((c) => c.addEventListener("click", () => toggleBrand(c.dataset.brand)));
   }
   function syncToolbar() {
     $$("#brandChips .chip").forEach((c) => {
       c.setAttribute("aria-pressed", state.brands.includes(c.dataset.brand));
       c.classList.toggle("dim", chipDim(c.dataset.brand));
     });
+    $$("#brandGrid button").forEach((c) => {
+      c.setAttribute("aria-pressed", state.brands.includes(c.dataset.brand));
+      c.classList.toggle("dim", chipDim(c.dataset.brand));
+    });
+    $("#brandCount").textContent = state.brands.length || "";
+    $("#pickedBrands").innerHTML = state.brands.map((id) => {
+      const b = D.brands.find((x) => x.id === id);
+      return `<button class="chip" data-brand="${esc(id)}" aria-pressed="true" aria-label="取消 ${esc(b.label)}">
+        ${esc(b.label)}<span class="x" aria-hidden="true">×</span></button>`;
+    }).join("");
+    $$("#pickedBrands .chip").forEach((c) => c.addEventListener("click", () => toggleBrand(c.dataset.brand)));
+
     $$(".seg button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.view === state.view));
     $("#openOnly").setAttribute("aria-pressed", state.open);
     $("#q").value = state.q;
@@ -372,10 +348,9 @@
     $("#clearAll").hidden = !(state.brands.length || state.q || state.open || state.area || state.time);
   }
   function classicClock() {
-    const t = currentNow();
-    $("#clock").textContent = fmtHM(toMin(t.h, t.m));
+    $("#clock").textContent = fmtHM(nowMin());
     $("#nowstate").textContent = state.time
-      ? `模擬時間 · 東京實際 ${fmtHM(toMin(NOW.h, NOW.m))}`
+      ? `模擬時間 · 東京實際 ${fmtHM(NOW.h * 60 + NOW.m)}`
       : `台北 ${taipeiHM()} · 東京 週${WD[NOW.wd]}`;
     $("#nowstate").className = state.time ? "sim" : "ok";
     $("#nowChip").textContent = state.time ? "切回現在 ⟲" : "試不同時間 →";
@@ -453,22 +428,39 @@
       Object.assign(state, { area: null, brands: [], q: "", open: false, time: null });
       writeHash(); renderAtlas(); buildChips(); render();
     });
+    // 手機品牌面板：原生 dialog 提供焦點鎖定、Esc 與背景 inert
+    const sheet = $("#brandSheet");
+    const setSheetOpen = (open) => {
+      $("#brandBtn").setAttribute("aria-expanded", String(open));
+      document.body.classList.toggle("sheet-open", open);
+    };
+    const closeSheet = () => { sheet.close(); setSheetOpen(false); $("#brandBtn").focus(); };
+    $("#brandBtn").addEventListener("click", () => { sheet.showModal(); sheet.focus(); setSheetOpen(true); });
+    // Esc 由瀏覽器關閉，cancel 與 close 都同步一次狀態（idempotent）
+    sheet.addEventListener("cancel", () => setSheetOpen(false));
+    sheet.addEventListener("close", () => setSheetOpen(false));
+    sheet.addEventListener("click", (e) => { if (e.target === sheet) closeSheet(); });
+    $("[data-act=closeSheet]").addEventListener("click", closeSheet);
     // 時間模擬：循環「現在 → 09:30 → 11:00 → 15:00 → 19:30 → 20:30 → 21:30 → 現在」
     const presets = [null, "09:30", "11:00", "15:00", "19:30", "20:30", "21:30"];
     $("#nowChip").addEventListener("click", () => setTime(presets[(presets.indexOf(state.time) + 1) % presets.length]));
     document.addEventListener("keydown", (e) => {
+      if (e.target.closest?.("dialog")) return;
       if (e.target.matches("input, textarea") || e.metaKey || e.ctrlKey) return;
       if (e.key === "/") { e.preventDefault(); $("#q").focus(); }
       const n = +e.key;
       if (n >= 1 && n <= D.areas.length) goArea(D.areas[n - 1].id);
       if (e.key === "Escape") {
         if (state.area) goArea(null);
+        else if (state.view === "brand") { state.view = "area"; writeHash(); render(); }
         else $("#clearAll").click();
       }
     });
   }
 
   // ═════════════════════════════ 啟動 ═════════════════════════════
+  $(".brand-sub b").textContent = `${D.brands.length} 個品牌 · ${D.stores.length} 間店 · ${D.areas.length} 個區域。`;
+  $("#dataStamp").textContent = `資料 ${D.meta.updated} 官網擷取`;
   bindStatic();
   renderAtlas();
   buildChips();
