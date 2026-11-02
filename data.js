@@ -38,8 +38,10 @@ window.SHOP_DATA = (() => {
       note: "上野站到御徒町站中間就是阿美橫町，走一趟三間都能到；3COINS 在站內、改札內，要逛就先別出站。"
     },
     {
-      id: "akiba", code: "G", name: "秋葉原", sub: "電器街", walk: "→ 御徒町 5 分",
-      note: "品牌清單裡沒有店。只有藥妝、電器（ヨドバシ、ドン・キホーテ）。要買品牌服飾，走 5 分鐘到御徒町站直接接上 F 區。"
+      id: "yuzawa", code: "G", name: "越後湯澤", sub: "新潟 · 南魚沼／湯澤溫泉街",
+      walk: "東口 ↔ 西口 5 分 · のぐち本店 東口 5 分",
+      note: "站內 CoCoLo 一次買齊土產、地酒、便當；生鮮超市只有東口的のぐち，19:00 就關。",
+      region: "新潟県"
     }
   ];
 
@@ -99,7 +101,18 @@ window.SHOP_DATA = (() => {
     { id: "ecute", area: "ueno", name: "ecute 上野（改札內）", floorRange: "改札內 1–3F", addr: "上野駅改札內", map: "ecute上野",
       note: "改札內，要逛就先別出站。" },
     { id: "parkplace", area: "ueno", name: "松坂屋パークプレイス24", floorRange: "B1–4F", addr: "上野3-25-10", map: "松坂屋パークプレイス24",
-      note: "御徒町站走路 1 分；アートスポーツ本店鞋類在 1F。" }
+      note: "御徒町站走路 1 分；アートスポーツ本店鞋類在 1F。" },
+    // ── G 越後湯澤
+    { id: "cocolo", area: "yuzawa", name: "CoCoLo 湯沢 がんぎどおり", floorRange: "1F", addr: "湯沢2427-1", map: "CoCoLo湯沢 がんぎどおり",
+      note: "新幹線改札出站即到；土產、地酒、便當集中在這一條。" },
+    { id: "noguchi", area: "yuzawa", name: "ショッピングセンターのぐち 本店", addr: "湯沢2875-7", map: "ショッピングセンターのぐち 本店",
+      note: "東口徒步 5 分，離車站最近的生鮮超市；店內有 100 円商店。" },
+    { id: "noguchi-hearts", area: "yuzawa", name: "のぐち 湯沢ハーツ店", addr: "湯沢字中島川原1685", map: "ショッピングセンターのぐち 湯沢ハーツ店",
+      note: "國道 17 號旁，徒步約 20 分；品項最多、開到 21:00。" },
+    { id: "matsukiyo", area: "yuzawa", name: "マツモトキヨシ 越後湯沢駅前店", addr: "湯沢2427-2", map: "マツモトキヨシ 越後湯沢駅前店",
+      note: "東口出站左轉即到；日用品、零食、飲料。" },
+    { id: "seven-yuzawa", area: "yuzawa", name: "セブン-イレブン 越後湯沢西口店", addr: "湯沢2450", map: "セブン-イレブン 越後湯沢西口店",
+      note: "西口徒步 1 分，站外唯一 24 小時便利店；門口路窄，別開車。" }
   ];
 
   const stores = [
@@ -204,7 +217,29 @@ window.SHOP_DATA = (() => {
       alt: "改札內，早開", tags: ["雜貨", "生活", "早開"] },
     { id: "hoka-art", brand: "HOKA", name: "アートスポーツ 本店（授權店）", building: "parkplace",
       floor: "1F–2F", level: 1, hours: "10:00–20:00，無休", status: "ok",
-      alt: "鞋類在 1F", tags: ["鞋", "運動"] }
+      alt: "鞋類在 1F", tags: ["鞋", "運動"] },
+    // ── G 越後湯澤
+    { id: "cocolo-ichiba", brand: "中央いちば", name: "がんぎどおり 中央いちば", building: "cocolo",
+      floor: "1F", level: 1, hours: "9:00–19:00", status: "ok",
+      alt: "便當、熟食、生鮮、地酒一次買齊", tags: ["超市", "熟食", "土產"] },
+    { id: "ponshukan-shop", brand: "ぽんしゅ館", name: "ぽんしゅ館 魚沼商店", building: "cocolo",
+      floor: "1F", level: 1, hours: "9:00–19:00", status: "ok",
+      alt: "新潟地酒、米菓、漬物", tags: ["土產", "酒"] },
+    { id: "ponshukan-tasting", brand: "ぽんしゅ館", name: "越後乃酒蔵 利酒番所", building: "cocolo",
+      floor: "1F", level: 1, hours: "9:00–19:00", status: "ok",
+      alt: "500 円換 5 枚代幣，100 種清酒試飲", tags: ["酒", "體驗"] },
+    { id: "noguchi-main", brand: "のぐち", name: "ショッピングセンターのぐち 本店", building: "noguchi",
+      floor: "1F", level: 1, hours: "9:30–19:00", status: "ok",
+      alt: "生鮮・肉魚・熟菜，店內有 100 円商店", tags: ["超市", "生鮮"] },
+    { id: "noguchi-hearts", brand: "のぐち", name: "のぐち 湯沢ハーツ店", building: "noguchi-hearts",
+      floor: "1F", level: 1, hours: "9:00–21:00", status: "ok",
+      alt: "品項最多，徒步約 20 分", tags: ["超市", "生鮮"] },
+    { id: "matsukiyo-yuzawa", brand: "マツモトキヨシ", name: "マツモトキヨシ 越後湯沢駅前店", building: "matsukiyo",
+      floor: "1F", level: 1, hours: "9:00–21:00", status: "ok",
+      alt: "東口出站左轉即到", tags: ["藥妝", "日用品"] },
+    { id: "seven-yuzawa", brand: "セブン-イレブン", name: "セブン-イレブン 越後湯沢西口店", building: "seven-yuzawa",
+      floor: "1F", level: 1, hours: "24 小時", status: "ok",
+      alt: "西口徒步 1 分，站外唯一便利店", tags: ["便利店", "24h"] }
   ];
 
   // 原文「> 走法」段落轉成可勾選的路線
@@ -254,14 +289,19 @@ window.SHOP_DATA = (() => {
     { id: "TODAYFUL", label: "TODAYFUL", kind: "服飾 · 選品代售" },
     { id: "DISCOAT", label: "DISCOAT", kind: "服飾" },
     { id: "AZUL by MOUSSY", label: "AZUL by MOUSSY", kind: "服飾" },
-    { id: "NOBLE", label: "NOBLE", kind: "服飾" }
+    { id: "NOBLE", label: "NOBLE", kind: "服飾" },
+    { id: "のぐち", label: "のぐち", kind: "超市" },
+    { id: "中央いちば", label: "中央いちば", kind: "超市 · 熟食" },
+    { id: "ぽんしゅ館", label: "ぽんしゅ館", kind: "地酒 · 土產" },
+    { id: "マツモトキヨシ", label: "マツモトキヨシ", kind: "藥妝 · 日用品" },
+    { id: "セブン-イレブン", label: "セブン-イレブン", kind: "便利店" }
   ];
 
   const meta = {
     title: "東京購物區域速查",
     subtitle: "含樓層 · 走到哪個區域、哪棟樓，就知道有哪幾間店可以逛",
-    source: "東京購物區域速查_含樓層.md（官網／百貨官網，擷取於 2025–26 年）",
-    updated: "2026-10"
+    source: "東京購物區域速查_含樓層.md（官網／百貨官網，擷取於 2025–26 年）＋越後湯澤官網（2026-11）",
+    updated: "2026-11"
   };
 
   return { areas, buildings, stores, plans, picks, brands, meta };

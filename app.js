@@ -14,7 +14,7 @@
   const storesOfArea = (area) => D.stores.filter((s) => areaOf(s) === area);
   const brandsOfArea = (area) => [...new Set(storesOfArea(area).map((s) => s.brand))];
   const isAltStore = (s) => /備案|授權|代售|待開幕/.test(`${s.alt} ${s.name}`);
-  const mapUrl = (b) => "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(`${b.map} 東京都 ${b.addr}`);
+  const mapUrl = (b) => "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(`${b.map} ${areaById[b.area].region || "東京都"} ${b.addr}`);
 
   // ═════════════════════════════ 時間 ═════════════════════════════
   const TZ = "Asia/Tokyo";
@@ -278,7 +278,7 @@
       </article>`;
     }).join("");
     const empty = !cards ? `<div class="empty-state"><h3>沒有符合條件的區域</h3><p>試著清除品牌或搜尋條件。</p></div>` : "";
-    return `<div class="crumb"><span class="path">區域總覽 <b>${D.areas.length}</b> 區 · 由西往東沿山手線</span></div>
+    return `<div class="crumb"><span class="path">區域總覽 <b>${D.areas.length}</b> 區 · 點一區看樓層與採買</span></div>
       <div class="overview">${cards}${empty}</div>`;
   }
 

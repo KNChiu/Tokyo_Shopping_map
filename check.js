@@ -41,6 +41,10 @@ const late = parseHours("11:00–02:00");
 assert.equal(openAt(late, 3, 60), true);
 assert.equal(openAt(late, 3, 120), false);
 
+// 24 小時：凌晨也開
+assert.deepEqual(parseHours("24 小時"), { base: [0, 1440], byWeekday: {} });
+assert.equal(open("seven-yuzawa", 3, 3, 0), true);
+
 for (const s of D.stores) assert.ok(parseHours(s.hours), s.id);
 
 console.log(`ok: ${D.stores.length} stores, hours checks passed`);

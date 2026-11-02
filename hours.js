@@ -4,7 +4,10 @@ window.SHOP_HOURS = (() => {
   const WD = ["日", "一", "二", "三", "四", "五", "六"];
   // 05:00 前視為跨日營業（例：到 02:00）；只用於營業時間，現在時間直接用 h * 60 + m
   const toMin = (h, m) => { const v = +h * 60 + +(m || 0); return v < 300 ? v + 1440 : v; };
-  const fmtHM = (min) => { const v = ((min % 1440) + 1440) % 1440; return `${String(Math.floor(v / 60)).padStart(2, "0")}:${String(v % 60).padStart(2, "0")}`; };
+  const fmtHM = (min) => {
+    const v = min === 1440 ? 1440 : ((min % 1440) + 1440) % 1440;
+    return `${String(Math.floor(v / 60)).padStart(2, "0")}:${String(v % 60).padStart(2, "0")}`;
+  };
 
   const HM = "(\\d{1,2})[:：](\\d{2})";
   const SPAN = "(\\d{1,2})[:：](\\d{2})\\s*[–—−-]\\s*(\\d{1,2})[:：](\\d{2})";
@@ -12,6 +15,8 @@ window.SHOP_HOURS = (() => {
 
   /** 解析速查表用到的幾種營業時間寫法 → { base:[開,關], byWeekday:{星期: [開,關]} } */
   function parseHours(text) {
+    // 24 小時制（例：7-11）
+    if (/24\s*小時|24時間/.test(text)) return { base: [0, 1440], byWeekday: {} };
     // 週一至六 11:00–20:30／日・祝 11:00–20:00   （週日整段不同）
     const weekdaySplit = text.match(new RegExp(`${SPAN}[／/]\\s*日・祝\\s*${SPAN}`));
     if (weekdaySplit) {
